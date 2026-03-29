@@ -1,23 +1,41 @@
 #!/usr/bin/env python3
-"""Kruskal's MST. Input: 'src dst weight' per line."""
-import sys
-edges, nodes = [], set()
-for line in sys.stdin:
-    p=line.split()
-    if len(p)>=3: edges.append((float(p[2]),p[0],p[1])); nodes.update(p[:2])
-parent = {n:n for n in nodes}; rank = {n:0 for n in nodes}
-def find(x):
-    while parent[x]!=x: parent[x]=parent[parent[x]]; x=parent[x]
-    return x
-def union(a,b):
-    a,b=find(a),find(b)
-    if a==b: return False
-    if rank[a]<rank[b]: a,b=b,a
-    parent[b]=a
-    if rank[a]==rank[b]: rank[a]+=1
-    return True
-edges.sort(); mst, total = [], 0
-for w,u,v in edges:
-    if union(u,v): mst.append((u,v,w)); total+=w
-print(f"MST total weight: {total}")
-for u,v,w in mst: print(f"  {u} -- {v} (weight {w})")
+"""Kruskal minimum spanning tree. Zero dependencies."""
+
+class UnionFind:
+    def __init__(self, n):
+        self.parent = list(range(n))
+        self.rank = [0] * n
+    def find(self, x):
+        if self.parent[x] != x: self.parent[x] = self.find(self.parent[x])
+        return self.parent[x]
+    def union(self, x, y):
+        rx, ry = self.find(x), self.find(y)
+        if rx == ry: return False
+        if self.rank[rx] < self.rank[ry]: rx, ry = ry, rx
+        self.parent[ry] = rx
+        if self.rank[rx] == self.rank[ry]: self.rank[rx] += 1
+        return True
+
+def kruskal(n, edges):
+    """edges: list of (u, v, weight). Returns MST edges and total weight."""
+    edges_sorted = sorted(edges, key=lambda e: e[2])
+    uf = UnionFind(n)
+    mst = []
+    total = 0
+    for u, v, w in edges_sorted:
+        if uf.union(u, v):
+            mst.append((u, v, w))
+            total += w
+            if len(mst) == n - 1: break
+    return mst, total
+
+def is_connected(n, edges):
+    uf = UnionFind(n)
+    for u, v, _ in edges: uf.union(u, v)
+    roots = set(uf.find(i) for i in range(n))
+    return len(roots) == 1
+
+if __name__ == "__main__":
+    edges = [(0,1,4),(0,2,2),(1,2,1),(1,3,5),(2,3,3)]
+    mst, total = kruskal(4, edges)
+    print(f"MST: {mst}, total weight: {total}")
